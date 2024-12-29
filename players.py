@@ -1,7 +1,7 @@
 from random import choice
 
 
-EXCLUDE_PLAYERS = []
+EXCLUDE_PLAYERS = ['AntiEyeByEye', 'EyeByEye', 'Pathfinder']
 
 
 class ShouldOverrideException(Exception):
@@ -58,19 +58,36 @@ class RandomChoice(BasePlayer):
 
 class Pathfinder(BasePlayer):
     """
-    A class representing a player who maximizes score
-    when playing against egoistic and cooperative players.
+    A class representing a player maximizing score playing
+    vs cooperative player.
     """
 
     def choose0(self, choices, scores, totals):
         if len(scores) < 1:
             return 1
 
-        # outperfrom coop player
-        if scores[-1] == 3 or scores[-1] == 5:
+        if scores[-1] == 3 or scores[-1] == 5: # (1, 1) or (0, 1) -> (0, x)
             return 0
 
-        if scores[-1] == 0 or scores[-1] == 1:
+        if scores[-1] == 0 or scores[-1] == 1: # (1, 0) or (0, 0) -> (1, x)
+            return 1
+
+
+class Pathfinder2(BasePlayer):
+    """
+    A class representing a player maximizing score playing
+    vs cooperative player.
+    """
+
+    def choose0(self, choices, scores, totals):
+        if len(scores) < 1:
+            return 0 # changing to 1 drastically decreases performance
+
+        # outperfrom coop player
+        if scores[-1] == 3 or scores[-1] == 5: # (1, 1) or (0, 1) -> (0, x)
+            return 0
+
+        if scores[-1] == 0 or scores[-1] == 1: # (1, 0) || (1, 1) -> (1, x)
             return 1
 
 
@@ -131,6 +148,9 @@ class EyeByEye(BasePlayer):
 
 
 class AntiEyeByEye(EyeByEye):
+    """
+    A class representing a player negating an ally's action.
+    """
 
     def choose0(self, choices, scores, totals):
         if len(choices) < 1:
@@ -155,21 +175,13 @@ class Poker(BasePlayer):
             return 1
 
         # should not be here
-        assert totals[0] != totals[1]
+        assert totals[0] == totals[1]
 
 
 class LastTwoRounds(BasePlayer):
     """
     A class representing a player choosing the best action from the last two.
     """
-
-    def _pseudo_random_choice(self, totals):
-        if totals[0] > totals[1]:
-            return 0
-        elif totals[1] > totals[0]:
-            return 1
-        return choice([0, 1])
-
 
     def choose0(self, choices, scores, totals):
         # warming-up
@@ -183,8 +195,6 @@ class LastTwoRounds(BasePlayer):
 
         # actually both are 0
         if scores[-1] == 0:
-            if choices[-1] == choices[-2]:
-                return (1 - choices[-1])
-            return self._pseudo_random_choice(totals)
+            return 0
 
         return choices[-1]
