@@ -1,7 +1,7 @@
 from random import choice
 
 
-EXCLUDE_PLAYERS = ['AntiEyeByEye', 'EyeByEye', 'Pathfinder']
+EXCLUDE_PLAYERS = ['Pathfinder*']
 
 
 class ShouldOverrideException(Exception):
@@ -29,6 +29,10 @@ class BasePlayer:
     def choose0(self, choices: list, scores: list, totals: list) -> int:
         raise ShouldOverrideException(f"must override choose0()!")
 
+    def opponent_last_choice(self, scores: list, inverse = False) -> int:
+        choice = 0 if scores[-1] == 1 or scores[-1] == 0 else 1
+        return 1 - choice if inverse else choice
+
 
 class Selfish(BasePlayer):
     """
@@ -40,7 +44,7 @@ class Selfish(BasePlayer):
 
 class Coop(BasePlayer):
     """
-    A class representing cooperative player.
+    A class representing always cooperative player.
     """
 
     def choose0(self, choices, scores, totals):
@@ -56,10 +60,10 @@ class RandomChoice(BasePlayer):
         return choice([0, 1])
 
 
-class Pathfinder(BasePlayer):
+class Pathfinder1(BasePlayer):
     """
-    A class representing a player maximizing score playing
-    vs cooperative player.
+    A class representing a player trying to earn more than in
+    the previous round.
     """
 
     def choose0(self, choices, scores, totals):
@@ -73,22 +77,17 @@ class Pathfinder(BasePlayer):
             return 1
 
 
-class Pathfinder2(BasePlayer):
+class Pathfinder0(Pathfinder1): # previous name: Pathfinder2
     """
-    A class representing a player maximizing score playing
-    vs cooperative player.
+    A class that represents Pathfinder strategy, but starts
+    with 0 (deception). It almost always beats Pathfinder1.
     """
+
 
     def choose0(self, choices, scores, totals):
         if len(scores) < 1:
-            return 0 # changing to 1 drastically decreases performance
-
-        # outperfrom coop player
-        if scores[-1] == 3 or scores[-1] == 5: # (1, 1) or (0, 1) -> (0, x)
-            return 0
-
-        if scores[-1] == 0 or scores[-1] == 1: # (1, 0) || (1, 1) -> (1, x)
-            return 1
+            return 0 # 0 significantly improves performance
+        return super().choose0(choices, scores, totals)
 
 
 class Pedantic(BasePlayer):
@@ -123,7 +122,7 @@ class Friedman(BasePlayer):
         if len(choices) < 1:
             return 1
 
-        if scores[-1] == 0:
+        if self.opponent_last_choice(scores) == 0:
             self._next_choice = 0
 
         return self._next_choice
@@ -131,41 +130,37 @@ class Friedman(BasePlayer):
 
 class EyeByEye(BasePlayer):
     """
-    A class representing a player copying an ally's action.
-    """
-
-    def _ally_last_choice(self, choices, scores):
-        if choices[-1] == 0:
-            return 1 if scores[-1] == 5 else 0
-        return 1 if scores[-1] == 3 else 0
-
-
-    def choose0(self, choices, scores, totals):
-        if len(choices) < 1:
-            return 1
-
-        return self._ally_last_choice(choices, scores)
-
-
-class AntiEyeByEye(EyeByEye):
-    """
-    A class representing a player negating an ally's action.
+    A class representing a player who chooses the same action as the
+    opponent's last choice.
     """
 
     def choose0(self, choices, scores, totals):
         if len(choices) < 1:
             return 1
+        return self.opponent_last_choice(scores)
 
-        return 1 if self._ally_last_choice(choices, scores) == 0 else 1
+
+class AntiEyeByEye(BasePlayer):
+    """
+    A class representing a player who chooses the opposite action to
+    its opponent's last action.
+    """
+
+    def choose0(self, choices, scores, totals):
+        if len(choices) < 1:
+            return 1
+        return self.opponent_last_choice(scores, inverse=True)
 
 
 class Poker(BasePlayer):
     """
     A class representing a player choosing the most profitable action.
+    TODO:
+     1. to try the initial steps in reverse order
     """
 
     def choose0(self, choices, scores, totals):
-        # warming-up
+        # warming-up: tries 0, then 1
         if len(choices) < 2:
             return len(choices)
 
@@ -181,10 +176,13 @@ class Poker(BasePlayer):
 class LastTwoRounds(BasePlayer):
     """
     A class representing a player choosing the best action from the last two.
+
+    TODO:
+     1. to try the initial steps in reverse order
     """
 
     def choose0(self, choices, scores, totals):
-        # warming-up
+        # warming-up: tries 0, then 1
         if len(choices) < 2:
             return len(choices)
 

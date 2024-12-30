@@ -40,6 +40,8 @@ class PlayerFactory:
             if len(clazz_subclasses) == 0:
                 return clazz_names
             for subclazz in clazz_subclasses:
+                # FIX: enumerate all subclasses and exclude after enumeration,
+                # currently this logic excludes sub classes :(
                 if subclazz.__name__ in EXCLUDE_PLAYERS:
                     continue
                 clazz_names.append(subclazz.__name__)
