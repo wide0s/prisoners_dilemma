@@ -1,5 +1,5 @@
 from random import choice
-
+from typing import Tuple, Union
 
 EXCLUDE_PLAYERS = ['Pathfinder*']
 
@@ -16,8 +16,10 @@ class BasePlayer:
     def __init__(self):
         self.reset()
 
+
     def reset(self):
         pass
+
 
     def choose(self, choices: list, scores: list, totals: list) -> int:
         assert choices != None
@@ -26,11 +28,26 @@ class BasePlayer:
         assert len(totals) >= 2
         return int(self.choose0(choices, scores, totals))
 
+
     def choose0(self, choices: list, scores: list, totals: list) -> int:
         raise ShouldOverrideException(f"must override choose0()!")
 
-    def opponent_last_choice(self, scores: list, inverse = False) -> int:
-        choice = 0 if scores[-1] == 1 or scores[-1] == 0 else 1
+
+    def opponent_choice_score(self, scores: Union[list, int]) -> Tuple[int, int]:
+        score = scores[-1] if isinstance(scores, list) else scores
+        if score == 0: # choice = 1
+            return 0, 5
+        if score == 1: # choice = 0
+            return 0, 1
+        if score == 3: # choice = 1
+            return 1, 3
+        if score == 5: # choice = 0
+            return 1, 0
+        raise ValueError(score)
+
+
+    def opponent_choice(self, scores: Union[list, int], inverse = False) -> int:
+        choice, _ = self.opponent_choice_score(scores)
         return 1 - choice if inverse else choice
 
 
@@ -42,7 +59,7 @@ class Selfish(BasePlayer):
         return 0
 
 
-class Coop(BasePlayer):
+class Cooperative(BasePlayer): # former name: Coop
     """
     A class representing always cooperative player.
     """
@@ -60,7 +77,7 @@ class RandomChoice(BasePlayer):
         return choice([0, 1])
 
 
-class Pathfinder1(BasePlayer):
+class Pathfinder1(BasePlayer): # former name: Pathfinder
     """
     A class representing a player trying to earn more than in
     the previous round.
@@ -77,7 +94,7 @@ class Pathfinder1(BasePlayer):
             return 1
 
 
-class Pathfinder0(Pathfinder1): # previous name: Pathfinder2
+class Pathfinder0(Pathfinder1): # former name: Pathfinder2
     """
     A class that represents Pathfinder strategy, but starts
     with 0 (deception). It almost always beats Pathfinder1.
@@ -122,7 +139,7 @@ class Friedman(BasePlayer):
         if len(choices) < 1:
             return 1
 
-        if self.opponent_last_choice(scores) == 0:
+        if self.opponent_choice(scores) == 0:
             self._next_choice = 0
 
         return self._next_choice
@@ -137,7 +154,7 @@ class EyeByEye(BasePlayer):
     def choose0(self, choices, scores, totals):
         if len(choices) < 1:
             return 1
-        return self.opponent_last_choice(scores)
+        return self.opponent_choice(scores)
 
 
 class AntiEyeByEye(BasePlayer):
@@ -149,7 +166,7 @@ class AntiEyeByEye(BasePlayer):
     def choose0(self, choices, scores, totals):
         if len(choices) < 1:
             return 1
-        return self.opponent_last_choice(scores, inverse=True)
+        return self.opponent_choice(scores, inverse=True)
 
 
 class Poker(BasePlayer):
@@ -195,4 +212,32 @@ class LastTwoRounds(BasePlayer):
         if scores[-1] == 0:
             return 0
 
+        return choices[-1]
+
+
+class LastTwoRoundsV2(BasePlayer):
+    """
+    A class representing a player who chooses the action that
+    brought the highest total number of points in two previous
+    rounds.
+    """
+
+    def choose0(self, choices, scores, totals):
+        # warming-up: tries 0, then 1
+        if len(choices) < 2:
+            return len(choices)
+
+        # computes the total points in the previous two rounds
+        total_scores = [0] * 2
+        for idx in range(2):
+            _, total_scores[idx] = \
+                    self.opponent_choice_score(scores[idx - 2])
+            total_scores[idx] += scores[idx - 2]
+
+        if total_scores[-1] > total_scores[-2]:
+            return choices[-1]
+        elif total_scores[-2] > total_scores[-1]:
+            return choices[-2]
+
+        # TODO: think twice what to do
         return choices[-1]

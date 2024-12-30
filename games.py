@@ -51,7 +51,9 @@ class GameOfTwo:
         self.total_scores2[-1] += score2
 
 
-    def name(self):
+    def name(self) -> str:
+        if self.p1 == None or self.p2 == None:
+            return None
         p1_name = self.p1.__class__.__name__
         p2_name = self.p2.__class__.__name__
         return f"{p1_name} vs {p2_name}"
