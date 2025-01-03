@@ -21,41 +21,24 @@ class BasePlayer:
         pass
 
 
-    def choose(self, choices: list, scores: list, totals: list) -> int:
-        assert choices != None
-        assert scores != None
-        assert len(choices) == len(scores)
-        assert len(totals) >= 2
-        return int(self.choose0(choices, scores, totals))
+    def choose(self, choices: list, scores: list, totals: list, oppo_choices: list, oppo_scores: list, oppo_totals: list) -> int:
+        assert choices != None and oppo_choices != None
+        assert scores != None and oppo_scores != None
+        assert len(choices) == len(scores) and len(oppo_choices) == len (oppo_scores)
+        assert len(totals) >= 2 and len(oppo_totals) >= 2
+        return int(self.choose0(choices, scores, totals, oppo_choices, oppo_scores, oppo_totals))
 
 
-    def choose0(self, choices: list, scores: list, totals: list) -> int:
+    def choose0(self, choices: list, scores: list, totals: list,
+            oppo_choices: list, oppo_scores: list, oppo_totals: list) -> int:
         raise ShouldOverrideException(f"must override choose0()!")
-
-
-    def opponent_choice_score(self, scores: Union[list, int]) -> Tuple[int, int]:
-        score = scores[-1] if isinstance(scores, list) else scores
-        if score == 0: # choice = 1
-            return 0, 5
-        if score == 1: # choice = 0
-            return 0, 1
-        if score == 3: # choice = 1
-            return 1, 3
-        if score == 5: # choice = 0
-            return 1, 0
-        raise ValueError(score)
-
-
-    def opponent_choice(self, scores: Union[list, int], inverse = False) -> int:
-        choice, _ = self.opponent_choice_score(scores)
-        return 1 - choice if inverse else choice
 
 
 class Selfish(BasePlayer):
     """
     A class representing seflish player.
     """
-    def choose0(self, choices, scores, totals):
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
         return 0
 
 
@@ -64,7 +47,7 @@ class Cooperative(BasePlayer): # former name: Coop
     A class representing always cooperative player.
     """
 
-    def choose0(self, choices, scores, totals):
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
         return 1
 
 
@@ -73,7 +56,7 @@ class RandomChoice(BasePlayer):
     A class representing player who chooses randomly.
     """
 
-    def choose0(self, choices, scores, totals):
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
         return choice([0, 1])
 
 
@@ -83,7 +66,7 @@ class Pathfinder1(BasePlayer): # former name: Pathfinder
     the previous round.
     """
 
-    def choose0(self, choices, scores, totals):
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
         if len(scores) < 1:
             return 1
 
@@ -101,10 +84,11 @@ class Pathfinder0(Pathfinder1): # former name: Pathfinder2
     """
 
 
-    def choose0(self, choices, scores, totals):
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
         if len(scores) < 1:
             return 0 # 0 significantly improves performance
-        return super().choose0(choices, scores, totals)
+        return super().choose0(choices, scores, totals,  oppo_choices, oppo_scores,
+                oppo_totals)
 
 
 class Pedantic(BasePlayer):
@@ -114,7 +98,7 @@ class Pedantic(BasePlayer):
         self._random_rounds = 10
 
 
-    def choose0(self, choices, scores, totals):
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
         # warming-up
         if (len(choices) + 1) < self._random_rounds:
             return choice([0, 1])
@@ -135,11 +119,11 @@ class Friedman(BasePlayer):
         self._next_choice = 1
 
 
-    def choose0(self, choices, scores, totals):
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
         if len(choices) < 1:
             return 1
 
-        if self.opponent_choice(scores) == 0:
+        if oppo_choices[-1] == 0:
             self._next_choice = 0
 
         return self._next_choice
@@ -151,10 +135,10 @@ class EyeByEye(BasePlayer):
     opponent's last choice.
     """
 
-    def choose0(self, choices, scores, totals):
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
         if len(choices) < 1:
             return 1
-        return self.opponent_choice(scores)
+        return oppo_choices[-1]
 
 
 class AntiEyeByEye(BasePlayer):
@@ -163,10 +147,10 @@ class AntiEyeByEye(BasePlayer):
     its opponent's last action.
     """
 
-    def choose0(self, choices, scores, totals):
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
         if len(choices) < 1:
             return 1
-        return self.opponent_choice(scores, inverse=True)
+        return 1 - oppo_choices[-1]
 
 
 class Poker(BasePlayer):
@@ -176,7 +160,7 @@ class Poker(BasePlayer):
      1. to try the initial steps in reverse order
     """
 
-    def choose0(self, choices, scores, totals):
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
         # warming-up: tries 0, then 1
         if len(choices) < 2:
             return len(choices)
@@ -190,6 +174,27 @@ class Poker(BasePlayer):
         assert totals[0] == totals[1]
 
 
+class PokerAggr(BasePlayer):
+    """
+    A class representing a player choosing ...
+    """
+
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
+        # warming-up: tries 0, then 1
+        if len(choices) < 2:
+            return len(choices)
+
+        aggr_totals = [totals[idx] + oppo_totals[idx] for idx in range(0, 2)]
+
+        if aggr_totals[0] > aggr_totals[1]:
+            return 0
+        elif aggr_totals[1] > aggr_totals[0]:
+            return 1
+
+        # TODO: think twice what to return
+        return choices[-1]
+
+
 class LastTwoRounds(BasePlayer):
     """
     A class representing a player choosing the best action from the last two.
@@ -198,7 +203,7 @@ class LastTwoRounds(BasePlayer):
      1. to try the initial steps in reverse order
     """
 
-    def choose0(self, choices, scores, totals):
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
         # warming-up: tries 0, then 1
         if len(choices) < 2:
             return len(choices)
@@ -222,22 +227,17 @@ class LastTwoRoundsV2(BasePlayer):
     rounds.
     """
 
-    def choose0(self, choices, scores, totals):
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
         # warming-up: tries 0, then 1
         if len(choices) < 2:
             return len(choices)
 
-        # computes the total points in the previous two rounds
-        total_scores = [0] * 2
-        for idx in range(2):
-            _, total_scores[idx] = \
-                    self.opponent_choice_score(scores[idx - 2])
-            total_scores[idx] += scores[idx - 2]
+        round_scores = [scores[idx - 2] + oppo_scores[idx - 2] for idx in range(0, 2)]
 
-        if total_scores[-1] > total_scores[-2]:
+        if round_scores[-1] > round_scores[-2]:
             return choices[-1]
-        elif total_scores[-2] > total_scores[-1]:
+        elif round_scores[-2] > round_scores[-1]:
             return choices[-2]
 
-        # TODO: think twice what to do
+        # TODO: think twice what to return
         return choices[-1]

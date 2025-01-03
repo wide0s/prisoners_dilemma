@@ -24,8 +24,10 @@ class GameOfTwo:
 
 
     def play(self):
-        choice1 = self.p1.choose(self.choices1, self.scores1, self.total_scores1)
-        choice2 = self.p2.choose(self.choices2, self.scores2, self.total_scores2)
+        choice1 = self.p1.choose(self.choices1, self.scores1, self.total_scores1,
+                self.choices2, self.scores2, self.total_scores2)
+        choice2 = self.p2.choose(self.choices2, self.scores2, self.total_scores2,
+                self.choices1, self.scores1, self.total_scores1)
 
         score1 = score2 = 1
         if choice1 == 1 and choice2 == 1:
@@ -52,8 +54,6 @@ class GameOfTwo:
 
 
     def name(self) -> str:
-        if self.p1 == None or self.p2 == None:
-            return None
         p1_name = self.p1.__class__.__name__
         p2_name = self.p2.__class__.__name__
         return f"{p1_name} vs {p2_name}"
