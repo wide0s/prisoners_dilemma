@@ -1,7 +1,7 @@
 from random import choice
 from typing import Tuple, Union
 
-EXCLUDE_PLAYERS = ['Pathfinder*']
+EXCLUDE_PLAYERS = ['Pathfinder*', 'RandomChoice*', 'Pedantic*']
 
 
 class ShouldOverrideException(Exception):
@@ -241,3 +241,21 @@ class LastTwoRoundsV2(BasePlayer):
 
         # TODO: think twice what to return
         return choices[-1]
+
+
+class Periodic110(BasePlayer):
+    """
+    A class representing a player who chooses {0,1,1,0,1,1,0,1,1...}.
+    """
+
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
+        # warming-up: tries 0, then 1
+        if len(choices) < 2:
+            return len(choices)
+
+        if (choices[-2] + choices[-1]) == 1:
+            return 1
+        if choices[-1] == 1:
+            return 0
+        # reachable if starts from {0,0, ...}
+        return 1
