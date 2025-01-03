@@ -16,10 +16,8 @@ class BasePlayer:
     def __init__(self):
         self.reset()
 
-
     def reset(self):
         pass
-
 
     def choose(self, choices: list, scores: list, totals: list, oppo_choices: list, oppo_scores: list, oppo_totals: list) -> int:
         assert choices != None and oppo_choices != None
@@ -27,7 +25,6 @@ class BasePlayer:
         assert len(choices) == len(scores) and len(oppo_choices) == len (oppo_scores)
         assert len(totals) >= 2 and len(oppo_totals) >= 2
         return int(self.choose0(choices, scores, totals, oppo_choices, oppo_scores, oppo_totals))
-
 
     def choose0(self, choices: list, scores: list, totals: list,
             oppo_choices: list, oppo_scores: list, oppo_totals: list) -> int:
@@ -38,6 +35,7 @@ class Selfish(BasePlayer):
     """
     A class representing seflish player.
     """
+
     def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
         return 0
 
@@ -82,7 +80,6 @@ class Pathfinder0(Pathfinder1): # former name: Pathfinder2
     A class that represents Pathfinder strategy, but starts
     with 0 (deception). It almost always beats Pathfinder1.
     """
-
 
     def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
         if len(scores) < 1:
@@ -220,7 +217,7 @@ class LastTwoRounds(BasePlayer):
         return choices[-1]
 
 
-class LastTwoRoundsV2(BasePlayer):
+class BestOfTwoLast(BasePlayer): # former name: LastTwoRoundsV2
     """
     A class representing a player who chooses the action that
     brought the highest total number of points in two previous
@@ -239,8 +236,53 @@ class LastTwoRoundsV2(BasePlayer):
         elif round_scores[-2] > round_scores[-1]:
             return choices[-2]
 
-        # TODO: think twice what to return
-        return choices[-1]
+        return self.default_choice(choices)
+
+
+    def default_choice(self, choices):
+        return choices[-1] # wins in ~40%
+
+
+class BestOfTwo1(BestOfTwoLast):
+    """
+    A class representing a player who chooses the action that
+    brought the highest total number of points in two previous
+    rounds.
+    """
+
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
+        return super().choose0(choices, scores, totals, oppo_choices, oppo_scores, oppo_totals)
+
+    def default_choice(self, choices):
+        return 1 # wins in ~30%
+
+
+class BestOfTwoRand(BestOfTwoLast):
+    """
+    A class representing a player who chooses the action that
+    brought the highest total number of points in two previous
+    rounds.
+    """
+
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
+        return super().choose0(choices, scores, totals, oppo_choices, oppo_scores, oppo_totals)
+
+    def default_choice(self, choices):
+        return choice([choices[-2], choices[-1]]) # wins in ~19%
+
+
+class BestOfTwoPrev2(BestOfTwoLast):
+    """
+    A class representing a player who chooses the action that
+    brought the highest total number of points in two previous
+    rounds.
+    """
+
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
+        return super().choose0(choices, scores, totals, oppo_choices, oppo_scores, oppo_totals)
+
+    def default_choice(self, choices):
+        return choices[-2] # wins in ~1%
 
 
 class Periodic110(BasePlayer):
