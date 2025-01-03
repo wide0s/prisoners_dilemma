@@ -27,7 +27,6 @@ class PlayerFactory:
         class_ = classes.get(class_name, None)
         if class_ is not None:
             return class_
-
         raise ClassNotFoundError
 
 
@@ -36,15 +35,8 @@ class PlayerFactory:
         def enum_class_names(clazz, clazz_names=None):
             if clazz_names == None:
                 clazz_names = []
-            clazz_subclasses = clazz.__subclasses__()
-            if len(clazz_subclasses) == 0:
-                return clazz_names
-            for subclazz in clazz_subclasses:
-                # FIX: enumerate all subclasses and exclude after enumeration,
-                # currently this logic excludes sub classes :(
-                if subclazz.__name__ in EXCLUDE_PLAYERS:
-                    continue
+            for subclazz in clazz.__subclasses__():
                 clazz_names.append(subclazz.__name__)
                 enum_class_names(subclazz, clazz_names)
             return clazz_names
-        return sorted(enum_class_names(BasePlayer))
+        return sorted(set(enum_class_names(BasePlayer)) - set(EXCLUDE_PLAYERS))
