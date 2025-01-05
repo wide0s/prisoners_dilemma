@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 import argparse
+from os import urandom
+from random import Random
 from tabulate import tabulate
 
 from factory import PlayerFactory
@@ -9,22 +11,27 @@ from games import GameOfTwo
 
 def main(args):
     rounds = args.rounds
-    verbose = args.v
 
     print(f"ROUNDS={rounds}")
 
     player_names = PlayerFactory.class_names()
-    raw_results = [[n] + [0] * len(player_names) for n in player_names]
+    prng_seeds = {} if not args.s else \
+            { k:int.from_bytes(urandom(8), byteorder='big') for k in player_names }
+    raw_results = [ [n] + [0] * len(player_names) for n in player_names ]
     for row, player1_name in enumerate(player_names):
         for column, player2_name in enumerate(player_names[row:]):
             player1 = PlayerFactory.get(player1_name)()
             player2 = PlayerFactory.get(player2_name)()
+            if prng_seeds.get(player1_name) is not None:
+                player1.set_random(Random(prng_seeds.get(player1_name)))
+            if prng_seeds.get(player2_name) is not None:
+                player2.set_random(Random(prng_seeds.get(player2_name)))
             game = GameOfTwo(player1, player2)
             for _ in range(rounds):
                 game.play()
             total1 = game.total_scores1
             total2 = game.total_scores2
-            if verbose:
+            if args.v:
                 print(f"{game.name()}: {total1[-1]} (0={total1[0]}, 1={total1[1]}) \ {total2[-1]} (0={total2[0]}, 1={total2[1]})")
             raw_results[row][1 + row + column] = [total1, total2]
             raw_results[row + column][1 + row] = [total2, total1]
@@ -59,5 +66,6 @@ if __name__ == "__main__":
             default=1000,
             help='number of rounds (default: 1000)'
     )
-    parser.add_argument('-v', action='store_true', default=False, help='verbose output')
+    parser.add_argument('-v', action='store_true', default=False, help='verbose output (default: False)')
+    parser.add_argument('-s', action='store_true', default=False, help='player uses the same PRNG seed (default: False)')
     main(parser.parse_args())

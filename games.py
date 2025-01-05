@@ -7,18 +7,12 @@ class GameOfTwo:
         assert player2 != None
         self.p1 = player1
         self.p2 = player2
-        self.reset()
-
-
-    def reset(self):
         self.total_scores1 = [0] * 3 # [-1] total score
         self.total_scores2 = [0] * 3
         self.scores1 = []
         self.scores2 = []
         self.choices1 = []
         self.choices2 = []
-        self.p1.reset()
-        self.p2.reset()
 
 
     def play(self):

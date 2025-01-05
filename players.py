@@ -1,7 +1,7 @@
 from random import choice
 from typing import Tuple, Union
 
-EXCLUDE_PLAYERS = ['BestOfTwoLastEx*', 'Pathfinder*', 'RandomChoice*', 'Pedantic*']
+EXCLUDE_PLAYERS = []
 
 
 class ShouldOverrideException(Exception):
@@ -17,7 +17,15 @@ class BasePlayer:
         self.reset()
 
     def reset(self):
-        pass
+        self._random = None
+
+    def set_random(self, _random = None):
+        self._random = _random
+
+    def random_choice(self, seq: list):
+        if self._random is not None:
+            return self._random.choice(seq)
+        return choice(seq)
 
     def choose(self, choices: list, scores: list, totals: list, oppo_choices: list, oppo_scores: list, oppo_totals: list) -> int:
         assert choices != None and oppo_choices != None
@@ -55,7 +63,7 @@ class RandomChoice(BasePlayer):
     """
 
     def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
-        return choice([0, 1])
+        return self.random_choice([0, 1])
 
 
 class Pathfinder1(BasePlayer): # former name: Pathfinder
@@ -98,7 +106,7 @@ class Pedantic(BasePlayer):
     def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
         # warming-up
         if (len(choices) + 1) < self._random_rounds:
-            return choice([0, 1])
+            return self.random_choice([0, 1])
 
         if totals[0] > totals[1]:
             return 0
@@ -217,7 +225,7 @@ class LastTwoRounds(BasePlayer):
         return choices[-1]
 
 
-class BestOfTwoLast(BasePlayer): # former name: LastTwoRoundsV2
+class BestOfLastTwo(BasePlayer): # former name: LastTwoRoundsV2
     """
     A class representing a player who chooses the action that
     brought the highest total number of points in two previous
@@ -238,75 +246,9 @@ class BestOfTwoLast(BasePlayer): # former name: LastTwoRoundsV2
 
         return self.default_choice(choices)
 
-
     def default_choice(self, choices):
-        return choices[-1] # wins in ~40%
-
-
-class BestOfTwo1(BestOfTwoLast):
-    """
-    A class representing a player who chooses the action that
-    brought the highest total number of points in two previous
-    rounds.
-    """
-
-    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
-        return super().choose0(choices, scores, totals, oppo_choices, oppo_scores, oppo_totals)
-
-    def default_choice(self, choices):
-        return 1 # wins in ~30%
-
-
-class BestOfTwoRand(BestOfTwoLast):
-    """
-    A class representing a player who chooses the action that
-    brought the highest total number of points in two previous
-    rounds.
-    """
-
-    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
-        return super().choose0(choices, scores, totals, oppo_choices, oppo_scores, oppo_totals)
-
-    def default_choice(self, choices):
-        return choice([choices[-2], choices[-1]]) # wins in ~19%
-
-
-class BestOfTwoPrev2(BestOfTwoLast):
-    """
-    A class representing a player who chooses the action that
-    brought the highest total number of points in two previous
-    rounds.
-    """
-
-    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
-        return super().choose0(choices, scores, totals, oppo_choices, oppo_scores, oppo_totals)
-
-    def default_choice(self, choices):
-        return choices[-2] # wins in ~1%
-
-
-class BestOfTwoLastEx(BestOfTwoLast):
-    """
-    A class representing a player who chooses the action that
-    brought the highest total number of points in two previous
-    rounds.
-    """
-
-    def reset(self):
-        super().reset()
-        self._oppo_cooperative = True
-
-    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
-        if self._oppo_cooperative and len(oppo_choices) > 1:
-            if oppo_choices[-1] == 1:
-                return 1
-            self._oppo_cooperative = False
-        return super().choose0(choices, scores, totals, oppo_choices, oppo_scores, oppo_totals)
-
-    def default_choice(self, choices):
-        if self._oppo_cooperative:
-            return 1
-        return choices[-1]
+        return 1 # same result if return choice[-1]; 1 always wins choice[-2]
+                 # and choice([choices[-2], choices[-1])
 
 
 class Periodic110(BasePlayer):
