@@ -235,7 +235,7 @@ class BestOfLastTwo(BasePlayer): # former name: LastTwoRoundsV2
     def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
         # warming-up: tries 0, then 1
         if len(choices) < 2:
-            return len(choices)
+            return len(choices) # always wins {1, 0}
 
         round_scores = [scores[idx - 2] + oppo_scores[idx - 2] for idx in range(0, 2)]
 

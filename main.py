@@ -15,6 +15,8 @@ def main(args):
     print(f"ROUNDS={rounds}")
 
     player_names = PlayerFactory.class_names()
+    if args.num_players >= 0:
+        player_names = player_names[:min(args.num_players, len(player_names))]
     prng_seeds = {} if not args.s else \
             { k:int.from_bytes(urandom(8), byteorder='big') for k in player_names }
     raw_results = [ [n] + [0] * len(player_names) for n in player_names ]
@@ -32,7 +34,8 @@ def main(args):
             total1 = game.total_scores1
             total2 = game.total_scores2
             if args.v:
-                print(f"{game.name()}: {total1[-1]} (0={total1[0]}, 1={total1[1]}) \ {total2[-1]} (0={total2[0]}, 1={total2[1]})")
+                print(f"{game.name()}: {total1[-1]} (0={total1[0]}, 1={total1[1]})" \
+                        f" \ {total2[-1]} (0={total2[0]}, 1={total2[1]})")
             raw_results[row][1 + row + column] = [total1, total2]
             raw_results[row + column][1 + row] = [total2, total1]
 
@@ -66,6 +69,7 @@ if __name__ == "__main__":
             default=1000,
             help='number of rounds (default: 1000)'
     )
+    parser.add_argument('--num-players', type=int, default=-1, help='limits the number of players (default: -1)')
     parser.add_argument('-v', action='store_true', default=False, help='verbose output (default: False)')
     parser.add_argument('-s', action='store_true', default=False, help='player uses the same PRNG seed (default: False)')
     main(parser.parse_args())
