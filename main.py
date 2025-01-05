@@ -12,14 +12,16 @@ from games import GameOfTwo
 def main(args):
     rounds = args.rounds
 
-    print(f"ROUNDS={rounds}")
-
     player_names = PlayerFactory.class_names()
+    if args.list_players:
+        print(player_names)
+        return
     if args.num_players >= 0:
         player_names = player_names[:min(args.num_players, len(player_names))]
     prng_seeds = {} if not args.s else \
             { k:int.from_bytes(urandom(8), byteorder='big') for k in player_names }
     raw_results = [ [n] + [0] * len(player_names) for n in player_names ]
+    print(f"ROUNDS={rounds}")
     for row, player1_name in enumerate(player_names):
         for column, player2_name in enumerate(player_names[row:]):
             player1 = PlayerFactory.get(player1_name)()
@@ -70,6 +72,7 @@ if __name__ == "__main__":
             help='number of rounds (default: 1000)'
     )
     parser.add_argument('--num-players', type=int, default=-1, help='limits the number of players (default: -1)')
+    parser.add_argument('--list-players', action='store_true', default=False, help='lists supported players')
     parser.add_argument('-v', action='store_true', default=False, help='verbose output (default: False)')
     parser.add_argument('-s', action='store_true', default=False, help='player uses the same PRNG seed (default: False)')
     main(parser.parse_args())
