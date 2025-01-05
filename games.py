@@ -17,10 +17,8 @@ class GameOfTwo:
         self.scores2 = []
         self.choices1 = []
         self.choices2 = []
-        if self.p1 != None:
-            self.p1.reset()
-        if self.p2 != None:
-            self.p2.reset()
+        self.p1.reset()
+        self.p2.reset()
 
 
     def play(self):

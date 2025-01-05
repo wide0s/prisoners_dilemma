@@ -1,1 +1,2 @@
-unit tests
+debug: add unit tests
+feature: store the PRNG seed in random strategies

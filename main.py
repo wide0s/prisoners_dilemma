@@ -7,46 +7,46 @@ from factory import PlayerFactory
 from games import GameOfTwo
 
 
-# TODO:
-# 1. optimization: we play A vs B and B vs A, actually for B vs A we can use the result of A vs B
-
 def main(args):
-    n_rounds = args.rounds
+    rounds = args.rounds
     verbose = args.v
 
-    print(f"ROUNDS={n_rounds}")
+    print(f"ROUNDS={rounds}")
 
-    data_winner = []
-    data_personal = []
-    data_matrix = []
     player_names = PlayerFactory.class_names()
-    for player1_class_name in player_names:
-        row = [player1_class_name]
-        player1_total_score = 0 # the total score earned by player1 in all games
-        game_aggr_score = 0  # the sum of the scores of both players earned in all games with player1
-        for player2_class_name in player_names:
-            player1 = PlayerFactory.get(player1_class_name)()
-            player2 = PlayerFactory.get(player2_class_name)()
+    raw_results = [[n] + [0] * len(player_names) for n in player_names]
+    for row, player1_name in enumerate(player_names):
+        for column, player2_name in enumerate(player_names[row:]):
+            player1 = PlayerFactory.get(player1_name)()
+            player2 = PlayerFactory.get(player2_name)()
             game = GameOfTwo(player1, player2)
-            for _round in range(n_rounds):
+            for _ in range(rounds):
                 game.play()
-            scr1 = game.total_scores1
-            scr2 = game.total_scores2
+            total1 = game.total_scores1
+            total2 = game.total_scores2
             if verbose:
-                print(f"{game.name()}: {scr1[-1]} ({scr1[0]}, {scr1[1]}) \ {scr2[-1]} ({scr2[0]}, {scr2[1]})")
-            row.append(f"{scr1[-1]} \ {scr2[-1]}")
-            player1_total_score += scr1[-1]
-            game_aggr_score += scr1[-1] + scr2[-1]
-        data_matrix.append(row)
-        data_personal.append([player1_class_name, player1_total_score, player1_total_score / len(player_names),
-            player1_total_score / len(player_names) / n_rounds])
-        data_winner.append([player1_class_name, game_aggr_score, game_aggr_score / len(player_names),
-            game_aggr_score / len(player_names) / n_rounds])
+                print(f"{game.name()}: {total1[-1]} (0={total1[0]}, 1={total1[1]}) \ {total2[-1]} (0={total2[0]}, 1={total2[1]})")
+            raw_results[row][1 + row + column] = [total1, total2]
+            raw_results[row + column][1 + row] = [total2, total1]
 
-    print(tabulate(tuple(data_matrix), headers=['      \       '] + player_names))
-    print('\n' + tabulate(tuple(sorted(data_personal, key = lambda x: x[1], reverse=True)), \
+    p2p_tab = [] # points earned by players in a game
+    player_tab = [] # player points earned in all games
+    winner_tab = [] # points earned in all games with a specific player 
+    for row in raw_results:
+        p2p_row = [row[0]] # player name
+        player_total = game_total = 0
+        for column in row[1:]:
+            p2p_row.append(f"{column[0][-1]} \ {column[1][-1]}")
+            player_total += column[0][-1]
+            game_total += column[0][-1] + column[1][-1]
+        p2p_tab.append(p2p_row)
+        player_tab.append([row[0], player_total, player_total / len(player_names), player_total / len(player_names) / rounds])
+        winner_tab.append([row[0], game_total, game_total / len(player_names), game_total / len(player_names) / rounds])
+
+    print(tabulate(tuple(p2p_tab), headers=['      \       '] + player_names))
+    print('\n' + tabulate(tuple(sorted(player_tab, key = lambda x: x[1], reverse=True)), \
             headers=['', 'PLAYER SCORE', 'AVERAGE PER GAME', 'AVERAGE PER ROUND']))
-    print('\n' + tabulate(tuple(sorted(data_winner, key = lambda x: x[1], reverse=True)), \
+    print('\n' + tabulate(tuple(sorted(winner_tab, key = lambda x: x[1], reverse=True)), \
             headers=['', 'GAME SCORE', 'AVERAGE PER GAME', 'AVERAGE PER ROUND']))
 
 

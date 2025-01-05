@@ -1,7 +1,7 @@
 from random import choice
 from typing import Tuple, Union
 
-EXCLUDE_PLAYERS = ['Pathfinder*', 'RandomChoice*', 'Pedantic*']
+EXCLUDE_PLAYERS = ['BestOfTwoLastEx*', 'Pathfinder*', 'RandomChoice*', 'Pedantic*']
 
 
 class ShouldOverrideException(Exception):
@@ -283,6 +283,30 @@ class BestOfTwoPrev2(BestOfTwoLast):
 
     def default_choice(self, choices):
         return choices[-2] # wins in ~1%
+
+
+class BestOfTwoLastEx(BestOfTwoLast):
+    """
+    A class representing a player who chooses the action that
+    brought the highest total number of points in two previous
+    rounds.
+    """
+
+    def reset(self):
+        super().reset()
+        self._oppo_cooperative = True
+
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
+        if self._oppo_cooperative and len(oppo_choices) > 1:
+            if oppo_choices[-1] == 1:
+                return 1
+            self._oppo_cooperative = False
+        return super().choose0(choices, scores, totals, oppo_choices, oppo_scores, oppo_totals)
+
+    def default_choice(self, choices):
+        if self._oppo_cooperative:
+            return 1
+        return choices[-1]
 
 
 class Periodic110(BasePlayer):
