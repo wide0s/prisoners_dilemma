@@ -1,4 +1,4 @@
-class GameOfTwo:
+class PrisonersDilemma:
     p1 = None
     p2 = None
 

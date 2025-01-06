@@ -6,7 +6,7 @@ from random import Random
 from tabulate import tabulate
 
 from factory import PlayerFactory
-from games import GameOfTwo
+from games import PrisonersDilemma
 
 
 def main(args):
@@ -30,7 +30,7 @@ def main(args):
                 player1.set_random(Random(prng_seeds.get(player1_name)))
             if prng_seeds.get(player2_name) is not None:
                 player2.set_random(Random(prng_seeds.get(player2_name)))
-            game = GameOfTwo(player1, player2)
+            game = PrisonersDilemma(player1, player2)
             for _ in range(rounds):
                 game.play()
             total1 = game.total_scores1
@@ -68,8 +68,8 @@ if __name__ == "__main__":
             '-r',
             '--rounds',
             type=int,
-            default=1000,
-            help='number of rounds (default: 1000)'
+            default=200,
+            help='number of rounds (default: 200)'
     )
     parser.add_argument('--num-players', type=int, default=-1, help='limits the number of players (default: -1)')
     parser.add_argument('--list-players', action='store_true', default=False, help='lists supported players')

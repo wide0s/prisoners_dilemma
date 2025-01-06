@@ -115,8 +115,8 @@ class Pedantic(BasePlayer):
 
 class Friedman(BasePlayer):
     """
-    A class representing a player who cooperates until the 
-    first betrayal - then it always betrays.
+    A player starts by cooperating until the first betrayal -
+    then it always betrays.
     """
 
     def reset(self):
@@ -134,10 +134,10 @@ class Friedman(BasePlayer):
         return self._next_choice
 
 
-class EyeByEye(BasePlayer):
+class TitForTat(BasePlayer): # former name: EyeByEye
     """
-    A class representing a player who chooses the same action as the
-    opponent's last choice.
+    A player starts by cooperating and then mimics previous move by
+    opponent.
     """
 
     def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
@@ -146,9 +146,9 @@ class EyeByEye(BasePlayer):
         return oppo_choices[-1]
 
 
-class AntiEyeByEye(BasePlayer):
+class AntiTitForTat(BasePlayer): # former name: AntiEyeByEye
     """
-    A class representing a player who chooses the opposite action to
+    A player starts by cooperating then chooses the opposite action to
     its opponent's last action.
     """
 
@@ -253,7 +253,7 @@ class BestOfLastTwo(BasePlayer): # former name: LastTwoRoundsV2
 
 class Periodic110(BasePlayer):
     """
-    A class representing a player who chooses {0,1,1,0,1,1,0,1,1...}.
+    A player starts with 0 and repeats moves {0,1,1,0,1,1,0,1,1...}.
     """
 
     def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
@@ -266,4 +266,17 @@ class Periodic110(BasePlayer):
         if choices[-1] == 1:
             return 0
         # reachable if starts from {0,0, ...}
+        return 1
+
+
+class TitFor2Tats(BasePlayer):
+    """
+    The player starts with cooperation and punishes the second
+    betrayal in a row.
+    """
+
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
+        if len(choices) > 1:
+            if (oppo_choices[-1] + oppo_choices[-2]) == 0:
+                return 0
         return 1
