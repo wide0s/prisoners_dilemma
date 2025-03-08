@@ -128,10 +128,34 @@ class Friedman(BasePlayer):
         if len(choices) < 1:
             return 1
 
+        if self._next_choice == 0:
+            return 0
+
         if oppo_choices[-1] == 0:
             self._next_choice = 0
 
         return self._next_choice
+
+
+class SoftFriedman(BasePlayer):
+    """
+    A player that starts by cooperating until the opponent
+    betrays him twice in a row more than once, and then
+    switches to Friedman.
+    """
+    def reset(self):
+        super().reset()
+        self._cooperative_threshold = 2
+
+    def choose0(self, choices, scores, totals, oppo_choices, oppo_scores, oppo_totals):
+        if len(choices) < 2:
+            return 1
+
+        if self._cooperative_threshold > 0 \
+                and (oppo_choices[-2] + oppo_choices[-1] == 0):
+            self._cooperative_threshold -= 1
+
+        return 1 if self._cooperative_threshold > 0 else 0
 
 
 class TitForTat(BasePlayer): # former name: EyeByEye
